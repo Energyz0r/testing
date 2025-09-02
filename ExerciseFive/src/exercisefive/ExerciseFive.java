@@ -2,14 +2,14 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
  */
-package numberstatistics;
+package exercisefive;
 import java.util.Scanner;
 import java.lang.Math;
 /**
  *
  * @author 44785
  */
-public class NumberStatistics {
+public class ExerciseFive {
 
     /**
      * @param args the command line arguments
