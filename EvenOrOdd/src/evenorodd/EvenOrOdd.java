@@ -31,7 +31,7 @@ public class EvenOrOdd {
         } else {
             System.out.println("Number is Odd !");
         }
-        
+        userInput.close();
     }
     
 }

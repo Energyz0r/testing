@@ -34,6 +34,7 @@ public class ExerciseTwo {
         answer = myNumOne + myNumTwo + myNumThree;
         
         System.out.println("The sum of the three numbers is:" + answer);
+        scanner.close();
     }
     
 }

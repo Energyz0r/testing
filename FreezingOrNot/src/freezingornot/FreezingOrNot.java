@@ -28,7 +28,7 @@ public class FreezingOrNot {
             System.out.println("The water will not freeze at "+ userInput + "°C");
         }
         
-        
+        sc.close();
     }
     
 }

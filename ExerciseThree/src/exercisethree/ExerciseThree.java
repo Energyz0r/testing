@@ -36,6 +36,8 @@ public class ExerciseThree {
         System.out.println("The biggest number is: " + Math.max(firstNum, Math.max( secondNum, thirdNum)));
         System.out.println("The smallest number is: " + Math.min(firstNum, Math.min( secondNum, thirdNum)));
         System.out.println("The biggest number is: " + result +" and the smallest is " + resultTwo + ".");
+        
+        scanner.close();
     }
     
 }

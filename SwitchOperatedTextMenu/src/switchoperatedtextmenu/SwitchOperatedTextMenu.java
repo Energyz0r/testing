@@ -49,6 +49,7 @@ public class SwitchOperatedTextMenu {
                     break;
             }
         } while (!quit);
+        in.close();
     }
     
 }

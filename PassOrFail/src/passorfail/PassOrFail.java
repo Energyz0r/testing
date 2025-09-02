@@ -25,6 +25,8 @@ public class PassOrFail {
         } else { 
             System.out.println("You WIn!");
         }
+        
+        sc.close();
     }
     
 }

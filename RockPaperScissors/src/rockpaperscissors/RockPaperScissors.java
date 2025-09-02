@@ -104,6 +104,7 @@ public class RockPaperScissors {
             
             
             } while ( gamesPlayed < numOfGames);
+        userInput.close();
         
         //print scores
         for (int i = gamesPlayed; i == numOfGames; i++){

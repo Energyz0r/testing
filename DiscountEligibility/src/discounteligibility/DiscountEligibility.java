@@ -27,6 +27,7 @@ public class DiscountEligibility {
         } else {
             System.out.println("No discount !");
         }
+        sc.close();
     }
     
 }

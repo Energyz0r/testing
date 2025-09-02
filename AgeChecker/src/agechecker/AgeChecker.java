@@ -24,7 +24,7 @@ public class AgeChecker {
         } else {
             System.out.println("You are an adult !");
         }
-        
+        sc.close();
     }
     
 }

@@ -27,6 +27,8 @@ public class ExerciseFour {
         //calculate average and print
         double average = total/6;
         System.out.print("Your average is: " + average);
+        
+        userInput.close();
     }
     
 }
