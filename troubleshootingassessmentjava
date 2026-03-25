@@ -1,0 +1,106 @@
+package troubleshootingassessmentjava;
+
+import java.util.Scanner;
+
+/**
+This program is intended to allow a user play one or more guessing games.  In each game, the computer selects a number in the range 1 to 50.  
+The aim of the game for the user is to try and guess the computers number.  
+If the user's guess is right, the user wins the game.  
+If the users guess is wrong, the user is told whether their guess is higher or lower than the computers number.
+If the user makes six incorrect guesses, the user loses the game.   
+After each game, the computer asks the user whether the user wants to play again.
+
+ */
+
+public class TroubleShootingAssessmentJava 
+{
+    static Scanner scanner = new Scanner(System.in);
+  
+    public static void main(String[] args) 
+    {
+        System.out.println("Let's play a game.  I'll pick a number between");
+        System.out.println("1 and 50, and you try to guess it.");
+        boolean playAgain;
+
+        do 
+        {
+            playGame();  // call subroutine to play one game // we call the method playGame() not playGames()
+            System.out.println("Would you like to play again? ");
+            String response = scanner.next().trim().toLowerCase(); //added input sanitization
+            playAgain = response.equals("yes") || response.equals("y") || response.equals("true"); //input cases
+        } while (playAgain) ;
+        
+        System.out.println("Thanks for playing.  Goodbye.");
+    } // end of main()            
+   
+
+    /**
+     * This subroutine lets the user play one guessing game and tells
+     * the user whether he won or lost.
+     */
+    public static void playGame() // public static int playGame() changed to public static void playGame()
+    {
+        int computersNumber; // A random number picked by the computer.
+        float usersGuess;      // A number entered by user as a guess.
+        int guessCount;      // Number of guesses the user has made.
+        
+        computersNumber = (int)(49 * Math.random()) + 1;
+                 // The value assigned to computersNumber is a randomly
+                 //    chosen integer between 1 and 50, inclusive.
+                 
+        guessCount = 0;    
+        System.out.println("\nWhat is your first guess? ");
+        
+        while (true) 
+        {
+           
+           String input = scanner.nextLine();  // Get the user's guess first as string ( to be able to sanitize the input ) ONLY INTEGERS ALLOWED
+           usersGuess = Integer.parseInt(input); // transform the userGuess STRING into INTEGER
+           guessCount++; // add 1 to guessCount to keep track of user inputs
+
+           
+          
+           if (usersGuess == computersNumber)  // == is used to equal two integer variables
+           {
+                System.out.println("You got it in " + guessCount + " guesses!  My number was " + computersNumber);
+                break;  // The game is over; the user has won.
+           }
+           if (guessCount == 6)
+           {
+                System.out.println("You didn't get the number in 6 guesses.");
+                System.out.println("You lose.  My number was " + computersNumber); // forgot to close ""
+                break;  // The game is over; the user has lost.
+           }
+           
+           // If we get to this point, the game continues.
+           
+           try {
+               
+           
+           if (usersGuess < 1 || usersGuess > 50 ) {   //user input needs to be between 1 and 50 if its lower or over the  expected range 
+               System.out.println("Please enter a number between 1 and 50: "); // print this statement
+               guessCount--;
+           } 
+           else 
+           {    
+                if (usersGuess < computersNumber)  // check if usersGuess is lower than computer chosen number
+                {
+                    System.out.println("That's too low.  Try again: "); // Tell the user if the guess was too low.
+                } //added brackets for the System.out.println
+                else // first case equal "==" , second case lower "<", last case else will satisfy all other cases
+                {
+                    System.out.println("That's too high.  Try again: ");// Tell the user if the guess was too high.
+                }
+            }
+           } catch (NumberFormatException e){ // catch error and display message in case the number is not in correct range
+               System.out.println("Only numbers between 1 and 50");
+           }
+        }
+        
+        System.out.println();
+        
+    } // end of playGame()
+
+} // end of class GuessingGame
+
+
