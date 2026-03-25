@@ -1,0 +1,9 @@
+{
+  "gridSize": 160,
+  "zoom": 1.0,
+  "mirrorX": false,
+  "mirrorY": false,
+  "usePreviewRotations": false,
+  "invertBottom": false,
+  "recentColors": ["#000000", "#00FFCC", "#009966", "#663300", "#339900", "#FF0000", "#FFFFFF"]
+}

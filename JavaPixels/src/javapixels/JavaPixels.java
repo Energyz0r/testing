@@ -11,7 +11,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 /**
- * JavaPixels v3.0 - Zoom (percentage) with buttons + spinner - Export dialog (PNG or SVG) with resolution choices (Original, 2K, 4K) and file chooser - Fixed recent color swatches (filled) - Performance: int[][] + BufferedImage - TilingPanel: always a single square, 4 quadrants aligned exactly
+ * JavaPixels v3.0 - corrected:
+ *  - Mirror checkbox is added to toolbar and works
+ *  - Recent color swatches are filled properly (use JPanel swatches)
+ *  - Keeps zoom, export, tiling, extrapolate behavior from previous version
  */
 public class JavaPixels extends JFrame {
 
@@ -19,6 +22,7 @@ public class JavaPixels extends JFrame {
     private int[][] grid; // grid[y][x] = ARGB
     private boolean mirrorX = false;
     private boolean mirrorY = false;
+    private boolean mirrorExtrapolate = false;
 
     private Color selectedColor = Color.RED;
     private final ArrayList<Color> recentColors = new ArrayList<>();
@@ -44,7 +48,7 @@ public class JavaPixels extends JFrame {
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 6));
 
         top.add(new JLabel("Grid Size:"));
-        JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(gridSize, 2, 1024, 1));
+        JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(gridSize, 2, 2048, 1));
         sizeSpinner.addChangeListener(e -> {
             gridSize = (int) sizeSpinner.getValue();
             resetGrid();
@@ -93,6 +97,11 @@ public class JavaPixels extends JFrame {
             extrapolateFromTiling();
         });
         top.add(extrapolate);
+
+        // Mirror extrapolate checkbox (was created earlier but not added)
+        JCheckBox mirrorExtrapolateCheck = new JCheckBox("Mirror");
+        mirrorExtrapolateCheck.addActionListener(e -> mirrorExtrapolate = mirrorExtrapolateCheck.isSelected());
+        top.add(mirrorExtrapolateCheck);
 
         // Zoom controls
         JButton zoomOutBtn = new JButton("-");
@@ -149,6 +158,10 @@ public class JavaPixels extends JFrame {
         eastWrap.add(tilingPanel, BorderLayout.CENTER);
         add(eastWrap, BorderLayout.EAST);
 
+        // ensure spinner and label in sync
+        zoomSpinner.setValue(100);
+        zoomLabel.setText("100%");
+
         setSize(1200, 800);
         setLocationRelativeTo(null);
         setVisible(true);
@@ -202,64 +215,65 @@ public class JavaPixels extends JFrame {
     }
 
     private void extrapolateFromTiling() {
-        int old = gridSize;
-        int newSize = old * 2;
+    int old = gridSize;
+    int newSize = old * 2;
+    if (newSize > 8192) {
+        JOptionPane.showMessageDialog(this, "Extrapolation too large. Aborted.");
+        return;
+    }
 
-        if (newSize > 8192) {
-            JOptionPane.showMessageDialog(this, "Extrapolation too large. Aborted.");
-            return;
-        }
+    int[][] newGrid = new int[newSize][newSize];
 
-        int[][] newGrid = new int[newSize][newSize];
-
-        // Quadrant mapping:
-        // [0,0] original
-        // [1,0] mirror X
-        // [0,1] mirror Y
-        // [1,1] mirror both X and Y
-        for (int qy = 0; qy < 2; qy++) {
-            for (int qx = 0; qx < 2; qx++) {
-                boolean flipX = (qx == 1);
-                boolean flipY = (qy == 1);
-
-                for (int y = 0; y < old; y++) {
-                    for (int x = 0; x < old; x++) {
-                        int sx = flipX ? (old - 1 - x) : x;
-                        int sy = flipY ? (old - 1 - y) : y;
-                        newGrid[qy * old + y][qx * old + x] = grid[sy][sx];
-                    }
+    // ✅ If you have rotated the preview panels, use those rotations
+    for (int qy = 0; qy < 2; qy++) {
+        for (int qx = 0; qx < 2; qx++) {
+            int idx = qy * 2 + qx; // 0,1,2,3 for each quadrant
+            int rotation = tilingPanel.panels[idx].rotation;
+            for (int y = 0; y < old; y++) {
+                for (int x = 0; x < old; x++) {
+                    // Rotate pixels from the editor grid based on the panel's rotation
+                    int val = rotatedPixel(grid, x, y, rotation);
+                    newGrid[qy * old + y][qx * old + x] = val;
                 }
             }
         }
+    }
 
-        gridSize = newSize;
-        grid = newGrid;
-
-        editorImage = new BufferedImage(newSize, newSize, BufferedImage.TYPE_INT_ARGB);
-        for (int y = 0; y < newSize; y++) {
+    // If the "Mirror" (mirrorExtrapolate) checkbox is checked,
+    // we invert the bottom half vertically after applying rotations.
+    if (mirrorExtrapolate) {
+        for (int y = 0; y < old; y++) {
             for (int x = 0; x < newSize; x++) {
-                editorImage.setRGB(x, y, grid[y][x]);
+                newGrid[y + old][x] = newGrid[old -1 - y][x];
             }
         }
-
-        tilingPanel.updateSource(grid, gridSize);
-        editorPanel.revalidate();
-        editorPanel.repaint();
     }
 
-    private int rotatedPixel(int[][] src, int x, int y, int rot) {
-        int n = src.length;
-        return switch (rot) {
-            case 90 ->
-                src[n - 1 - x][y];
-            case 180 ->
-                src[n - 1 - y][n - 1 - x];
-            case 270 ->
-                src[x][n - 1 - y];
-            default ->
-                src[y][x];
-        };
-    }
+    // Update everything
+    grid = newGrid;
+    gridSize = newSize;
+
+    editorImage = new BufferedImage(newSize, newSize, BufferedImage.TYPE_INT_ARGB);
+    for (int y = 0; y < newSize; y++)
+        for (int x = 0; x < newSize; x++)
+            editorImage.setRGB(x, y, grid[y][x]);
+
+    tilingPanel.updateSource(grid, gridSize);
+    editorPanel.revalidate();
+    editorPanel.repaint();
+}
+
+
+   private int rotatedPixel(int[][] src, int x, int y, int rot) {
+    int n = src.length;
+    return switch (rot) {
+        case 90 -> src[n - 1 - y][x];
+        case 180 -> src[n - 1 - x][n - 1 - y];
+        case 270 -> src[y][n - 1 - x];
+        default -> src[y][x];
+    };
+}
+
 
     private void addRecentColor(Color c) {
         for (Color rc : recentColors) {
@@ -276,17 +290,33 @@ public class JavaPixels extends JFrame {
 
     private void refreshRecentColors() {
         recentColorsPanel.removeAll();
+
         for (Color c : recentColors) {
-            JButton b = new JButton();
-            b.setPreferredSize(new Dimension(50, 50));
-            b.setContentAreaFilled(false);
-            b.setFocusPainted(false);
-            b.setBorderPainted(true);
-            b.setOpaque(true);
-            b.setBackground(c);
-            b.addActionListener(e -> selectedColor = c);
-            recentColorsPanel.add(b);
+            // Use a JPanel as a swatch so LAF won't paint a white center
+            JPanel sw = new JPanel();
+            sw.setPreferredSize(new Dimension(28, 28));
+            sw.setBackground(c);
+            sw.setOpaque(true);
+            sw.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+            sw.setToolTipText(String.format("#%02X%02X%02X", c.getRed(), c.getGreen(), c.getBlue()));
+            sw.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            sw.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    selectedColor = c;
+                    // refresh borders to show selection
+                    refreshRecentColors();
+                }
+            });
+
+            // show selected color border
+            if (selectedColor != null && selectedColor.getRGB() == c.getRGB()) {
+                sw.setBorder(BorderFactory.createLineBorder(Color.GREEN.darker(), 2));
+            }
+
+            recentColorsPanel.add(sw);
         }
+
         recentColorsPanel.revalidate();
         recentColorsPanel.repaint();
     }
@@ -362,7 +392,6 @@ public class JavaPixels extends JFrame {
                 int oy = (h - drawSize) / 2;
 
                 // draw scaled image using nearest-neighbor effect by drawing rectangles per pixel
-                // faster approach: drawImage with nearest neighbor via rendering hints (but ensure no blur)
                 Image scaled = editorImage.getScaledInstance(drawSize, drawSize, Image.SCALE_REPLICATE);
                 g.drawImage(scaled, ox, oy, drawSize, drawSize, null);
 
@@ -614,7 +643,6 @@ public class JavaPixels extends JFrame {
             for (int y = 0; y < gridSize; y++) {
                 for (int x = 0; x < gridSize; x++) {
                     int argb = grid[y][x];
-                    // skip fully white transparent? we will draw all
                     g.setColor(new Color(argb, true));
                     int rx = (int) Math.round(x * box);
                     int ry = (int) Math.round(y * box);
@@ -648,17 +676,14 @@ public class JavaPixels extends JFrame {
             for (int x = 0; x < gridSize; x++) {
                 int argb = grid[y][x];
                 Color c = new Color(argb, true);
-                // skip fully white opaque to reduce file size? we will include all, but skip transparent pixels
                 if (c.getAlpha() == 0) {
                     continue;
                 }
-                // convert to hex (without alpha if alpha==255)
                 String hex;
                 if (c.getAlpha() == 255) {
                     hex = String.format("#%02x%02x%02x", c.getRed(), c.getGreen(), c.getBlue());
                     sb.append(String.format("<rect x=\"%d\" y=\"%d\" width=\"1\" height=\"1\" fill=\"%s\" />\n", x, y, hex));
                 } else {
-                    // include rgba with opacity attribute
                     hex = String.format("#%02x%02x%02x", c.getRed(), c.getGreen(), c.getBlue());
                     double op = c.getAlpha() / 255.0;
                     sb.append(String.format("<rect x=\"%d\" y=\"%d\" width=\"1\" height=\"1\" fill=\"%s\" opacity=\"%s\" />\n", x, y, hex, trim(op)));
